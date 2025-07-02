@@ -1,1 +1,1292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculateur PSTQ – Capital humain</title>
+  <style>
+  
+    body { font-family: sans-serif; background: #f3f4f6; padding: 20px; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 1.5rem; box-shadow: 0 4px 18px #0002; }
+    h1, h2 { color: #1e293b; }
+    label { font-weight: 500; margin-top: 16px; display: block; }
+    select, input[type="text"], input[type="number"] {
+      width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px;
+    }
+    button {
+      margin-top: 22px; padding: 12px 0; font-size: 17px;
+      background: #2563eb; color: white; border: none; border-radius: 8px;
+      width: 100%; font-weight: bold; box-shadow: 0 2px 8px #2563eb33; cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #1e40af; }
+    #result, #resultat-diagnostic, #score-total { margin-top: 20px; font-size: 1.12em; }
+    .card {
+      max-width:450px;margin:auto;padding:1.5rem;border-radius:1.25rem;background:#f8fafc;box-shadow:0 2px 12px #0001;
+      margin-bottom: 2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Capital humain – Calculateur PSTQ</h1>
+    
+    <button type="button" onclick="resetAll()">
+  Réinitialiser
+</button>
+    
+    <label for="avecConjoint">Présentez-vous une demande :</label>
+    <select id="avecConjoint" onchange="renderCapitalHumain()">
+      <option value="non">Seul(e)</option>
+      <option value="oui">Avec conjoint</option>
+    </select>
+
+    <form id="capitalHumain"></form>
+<div id="result"></div>
+
+    <div class="card">
+      <h3 style="font-size:1.2em;margin-bottom:0.5em;">Diagnostic de main-d’œuvre et expérience (PSTQ)</h3>
+      <label for="cnp" style="font-weight:500;">Votre code CNP (2021)</label>
+      <input type="text" id="cnp" maxlength="5" required pattern="[0-9]{5}" inputmode="numeric"
+        placeholder="Ex : 72410"
+        style="margin-bottom:10px;">
+      <small>
+        <a href="https://noc.esdc.gc.ca/?GoCTemplateCulture=fr-CA" target="_blank">Trouver mon code CNP</a>
+      </small>
+      <br><br>
+      <label for="experienceDiagnostic" style="font-weight:500;">Durée d'expérience dans la profession principale</label>
+      <select id="experienceDiagnostic" style="margin-bottom:10px;">
+        <option value="0">Moins de 12 mois</option>
+        <option value="12">12 à 23 mois</option>
+        <option value="24">24 à 35 mois</option>
+        <option value="36">36 à 47 mois</option>
+        <option value="48">48 à 60 mois</option>
+      </select>
+      <button type="button" onclick="calculerPointsDiagnostic()">Calculer le score diagnostic</button>
+      <div id="resultat-diagnostic"></div>
+    </div>
+    
+    <!-- COLLE CETTE SECTION ICI : -->
+    <div class="card">
+      <h3 style="font-size:1.2em;margin-bottom:0.5em;">Diplôme du Québec et Séjours hors Montréal</h3>
+      <label for="diplomeQC" style="font-weight:500;">Diplôme obtenu au Québec</label>
+      <select id="diplomeQC" style="margin-bottom:10px;">
+        <option value="">-- Sélectionner --</option>
+        <option value="secondaire">Secondaire général complété</option>
+        <option value="dep_600_899">DEP/ASP 600 à 899 heures</option>
+        <option value="dep_900">DEP/ASP 900 heures ou plus</option>
+        <option value="postsec_gen_2">Postsecondaire général 2 ans à temps plein</option>
+        <option value="postsec_tech_900">Postsecondaire technique 900h+ (QC)</option>
+        <option value="postsec_tech_3">Postsecondaire technique 3 ans à temps plein</option>
+        <option value="univ_1an">Universitaire 1er cycle 1 an à temps plein</option>
+        <option value="univ_2an">Universitaire 1er cycle 2 ans à temps plein</option>
+        <option value="univ_3_4an">Universitaire 1er cycle 3 ou 4 ans à temps plein</option>
+        <option value="univ_5an">Universitaire 1er cycle 5 ans ou plus à temps plein</option>
+        <option value="univ_2e_1an">Universitaire 2e cycle 1 an à temps plein</option>
+        <option value="univ_2e_2an">Universitaire 2e cycle 2 ans ou plus à temps plein</option>
+        <option value="univ_med_2an">Universitaire spécialisation médicale 2 ans ou plus à temps plein</option>
+        <option value="univ_3e">Universitaire 3e cycle</option>
+      </select>
+
+      <label for="expQC" style="font-weight:500;">Durée de l'expérience de travail au Québec (en mois, 5 dernières années)</label>
+      <select id="expQC" style="margin-bottom:10px;">
+        <option value="0">Moins de 12 mois</option>
+        <option value="12">12 à 23 mois</option>
+        <option value="24">24 à 35 mois</option>
+        <option value="36">36 à 47 mois</option>
+        <option value="48">48 à 60 mois</option>
+      </select>
+
+      <label for="residHorsMtl" style="font-weight:500;">Durée de la résidence à l’extérieur de Montréal (en mois)</label>
+      <select id="residHorsMtl" style="margin-bottom:10px;">
+        <option value="0">0 à 5 mois</option>
+        <option value="6">6 à 11 mois</option>
+        <option value="12">12 à 23 mois</option>
+        <option value="24">24 à 35 mois</option>
+        <option value="36">36 à 47 mois</option>
+        <option value="48">48 mois et plus</option>
+      </select>
+
+      <label for="travHorsMtl" style="font-weight:500;">Durée de l'expérience de travail à l’extérieur de Montréal (en mois)</label>
+      <select id="travHorsMtl" style="margin-bottom:10px;">
+        <option value="0">0 à 5 mois</option>
+        <option value="6">6 à 11 mois</option>
+        <option value="12">12 à 23 mois</option>
+        <option value="24">24 à 35 mois</option>
+        <option value="36">36 à 47 mois</option>
+        <option value="48">48 mois et plus</option>
+      </select>
+
+      <label for="etudHorsMtl" style="font-weight:500;">Durée du séjour d’études à l’extérieur de Montréal (en mois)</label>
+      <select id="etudHorsMtl" style="margin-bottom:10px;">
+        <option value="0">0 à 5 mois</option>
+        <option value="6">6 à 11 mois</option>
+        <option value="12">12 à 23 mois</option>
+        <option value="24">24 à 35 mois</option>
+        <option value="36">36 à 47 mois</option>
+        <option value="48">48 mois et plus</option>
+      </select>
+
+      <button type="button" onclick="calculerPointsQC()">Calculer les points Diplôme/Séjours hors Montréal</button>
+      <div id="resultat-qc"></div>
+    </div>
+    <!-- FIN DE LA SECTION À AJOUTER -->
+    <div class="card">
+  <h3 style="font-size:1.2em;margin-bottom:0.5em;">Offre d'emploi validée & Autorisation d'exercer</h3>
+  
+  <label for="offreValidee" style="font-weight:500;">Avez-vous une offre d'emploi validée par le ministre dans votre profession principale ?</label>
+  <select id="offreValidee" style="margin-bottom:10px;">
+    <option value="0">Non</option>
+    <option value="cmm">Oui, dans la CMM (Montréal)</option>
+    <option value="hors_cmm">Oui, hors CMM (extérieur Montréal)</option>
+  </select>
+
+  <label for="autorisationExercer" style="font-weight:500; margin-top:16px;">
+    Avez-vous une autorisation d’exercer la profession principale, ou une reconnaissance (partielle/complète) de votre diplôme/formation par l'autorité de réglementation au Québec ?
+  </label>
+  <select id="autorisationExercer" style="margin-bottom:10px;">
+    <option value="0">Non</option>
+    <option value="50">Oui</option>
+  </select>
+
+  <button type="button" onclick="calculerPointsOffre()">Calculer les points Offre/Autorisation</button>
+  <div id="resultat-offre"></div>
+</div>
+<div class="card">
+  <h3 style="font-size:1.2em;margin-bottom:0.5em;">Facteurs d’adaptation</h3>
+  
+  <label style="font-weight:500;">Séjour d’études sans diplôme au Québec</label>
+  <select id="sejourType" style="margin-bottom:8px;">
+    <option value="none">Aucun</option>
+    <option value="termine">Séjour terminé</option>
+    <option value="encours">Séjour en cours</option>
+  </select>
+  <label for="dureeSejour" style="font-weight:500;">Durée du séjour (en mois)</label>
+  <select id="dureeSejour" style="margin-bottom:10px;">
+    <option value="0">0 à 5 mois</option>
+    <option value="6">6 à 11 mois</option>
+    <option value="12">12 à 23 mois</option>
+    <option value="24">24 à 35 mois</option>
+    <option value="36">36 à 47 mois</option>
+    <option value="48">48 mois et plus</option>
+  </select>
+
+  <label for="parentQuebec" style="font-weight:500;">Membre de la parenté au Québec (hors CMM)</label>
+  <select id="parentQuebec" style="margin-bottom:10px;">
+    <option value="0">Aucun</option>
+    <option value="10">Lié au ressortissant étranger</option>
+    <option value="5">Lié au conjoint</option>
+  </select>
+
+  <button type="button" onclick="calculerPointsAdaptation()">Calculer les points Facteurs d’adaptation</button>
+  <div id="resultat-adaptation"></div>
+</div>
+<div class="card" id="section-conjoint" style="display:none;">
+  <h3 style="font-size:1.2em;margin-bottom:0.5em;">Critères liés à l’époux ou conjoint de fait</h3>
+  
+  <label for="frCompOraleConj">Compréhension orale du conjoint</label>
+  <select id="frCompOraleConj">
+    <option value="0">Niveau 1 à 3</option>
+    <option value="4">Niveau 4</option>
+    <option value="6">Niveau 5 ou 6</option>
+    <option value="8">Niveau 7 ou 8</option>
+    <option value="10">Niveau 9 à 12</option>
+  </select>
+
+  <label for="frProdOraleConj">Production orale du conjoint</label>
+  <select id="frProdOraleConj">
+    <option value="0">Niveau 1 à 3</option>
+    <option value="4">Niveau 4</option>
+    <option value="6">Niveau 5 ou 6</option>
+    <option value="8">Niveau 7 ou 8</option>
+    <option value="10">Niveau 9 à 12</option>
+  </select>
+
+  <label for="frCompEcritConj">Compréhension écrite du conjoint</label>
+  <select id="frCompEcritConj">
+    <option value="0">Niveau 1 à 3</option>
+    <option value="4">Niveau 4</option>
+    <option value="6">Niveau 5 ou 6</option>
+    <option value="8">Niveau 7 ou 8</option>
+    <option value="10">Niveau 9 à 12</option>
+  </select>
+
+  <label for="frProdEcritConj">Production écrite du conjoint</label>
+  <select id="frProdEcritConj">
+    <option value="0">Niveau 1 à 3</option>
+    <option value="4">Niveau 4</option>
+    <option value="6">Niveau 5 ou 6</option>
+    <option value="8">Niveau 7 ou 8</option>
+    <option value="10">Niveau 9 à 12</option>
+  </select>
+
+  <label for="ageConj">Âge du conjoint</label>
+  <select id="ageConj">
+    <option value="18">16 à 19 ans</option>
+    <option value="20">20 à 30 ans</option>
+    <option value="18">31 ans</option>
+    <option value="17">32 ans</option>
+    <option value="16">33 ans</option>
+    <option value="15">34 ans</option>
+    <option value="14">35 ans</option>
+    <option value="12">36 ans</option>
+    <option value="10">37 ans</option>
+    <option value="8">38 ans</option>
+    <option value="7">39 ans</option>
+    <option value="6">40 ans</option>
+    <option value="5">41 ans</option>
+    <option value="4">42 ans</option>
+    <option value="3">43 ans</option>
+    <option value="2">44 ans</option>
+    <option value="0">45 ans ou plus</option>
+  </select>
+
+  <label for="expQcConj">Expérience de travail au Québec du conjoint (5 dernières années)</label>
+  <select id="expQcConj">
+    <option value="0">0 à 5 mois</option>
+    <option value="5">6 à 11 mois</option>
+    <option value="10">12 à 23 mois</option>
+    <option value="15">24 à 35 mois</option>
+    <option value="23">36 à 47 mois</option>
+    <option value="30">48 à 60 mois</option>
+  </select>
+
+  <label for="scolariteConj">Niveau de scolarité du conjoint</label>
+  <select id="scolariteConj">
+    <option value="2">Secondaire général complété</option>
+    <option value="2">Secondaire professionnel 600 à 899h (QC)</option>
+    <option value="4">Secondaire professionnel 900h+ (QC)</option>
+    <option value="4">Secondaire professionnel 1 an+ (hors QC)</option>
+    <option value="6">Postsecondaire général 2 ans (temps plein)</option>
+    <option value="8">Postsecondaire technique 900h+ (QC)</option>
+    <option value="8">Postsecondaire technique 1 ou 2 ans (hors QC)</option>
+    <option value="12">Postsecondaire technique 3 ans (temps plein)</option>
+    <option value="12">Universitaire 1er cycle 1 an (temps plein)</option>
+    <option value="14">Universitaire 1er cycle 2 ans (temps plein)</option>
+    <option value="16">Universitaire 1er cycle 3 ou 4 ans (temps plein)</option>
+    <option value="17">Universitaire 1er cycle 5 ans ou plus (temps plein)</option>
+    <option value="17">Universitaire 2e cycle 1 an (temps plein)</option>
+    <option value="18">Universitaire 2e cycle 2 ans ou plus (temps plein)</option>
+    <option value="20">Universitaire spécialisation médicale (2 ans ou plus)</option>
+    <option value="20">Universitaire 3e cycle</option>
+  </select>
+
+  <label for="diplomeQcConj">Diplôme du Québec du conjoint</label>
+  <select id="diplomeQcConj">
+    <option value="0">Aucun</option>
+    <option value="3">Secondaire général complété</option>
+    <option value="3">Secondaire professionnel 600 à 899h</option>
+    <option value="6">Secondaire professionnel 900h+ (QC)</option>
+    <option value="9">Postsecondaire général 2 ans (temps plein)</option>
+    <option value="12">Postsecondaire technique 900h+ (QC)</option>
+    <option value="18">Postsecondaire technique 3 ans (temps plein)</option>
+    <option value="18">Universitaire 1er cycle 1 an (temps plein)</option>
+    <option value="21">Universitaire 1er cycle 2 ans (temps plein)</option>
+    <option value="24">Universitaire 1er cycle 3 ou 4 ans (temps plein)</option>
+    <option value="25">Universitaire 1er cycle 5 ans ou plus (temps plein)</option>
+    <option value="25">Universitaire 2e cycle 1 an (temps plein)</option>
+    <option value="27">Universitaire 2e cycle 2 ans ou plus (temps plein)</option>
+    <option value="30">Universitaire spécialisation médicale (2 ans ou plus)</option>
+    <option value="30">Universitaire 3e cycle</option>
+  </select>
+
+  <button type="button" onclick="calculerPointsConjoint()">Calculer les points Conjoint</button>
+  <div id="resultat-conjoint"></div>
+</div>
+
+    <div id="score-total"></div>
+    
+     <button type="button" onclick="calculerTout()">
+      Calculer le score global
+    </button>
+    
+    <button type="button" onclick="resetAll()">
+  Réinitialiser
+</button>
+
+  </div>
+
+  <script>
+    // === SECTION MAPPING CNP ===
+    // Mets ici tous tes codes (exemple ci-dessous, à compléter avec ton mapping officiel !)
+    const cnpDiagnostics = {
+     "00010": "Non publié",
+  "00011": "Non publié",
+  "00012": "Non publié",
+  "00013": "Non publié",
+  "00014": "Non publié",
+  "00015": "Non publié",
+  "10010": "Léger Déficit",
+  "10011": "Léger Déficit",
+  "10012": "Léger Déficit",
+  "10019": "Léger Déficit",
+  "10020": "Léger Déficit",
+  "10021": "Équilibre",
+  "10022": "Équilibre",
+  "10029": "Équilibre",
+  "10030": "Équilibre",
+  "11100": "Léger Déficit",
+  "11101": "Équilibre",
+  "11102": "Léger Déficit",
+  "11103": "Équilibre",
+  "11109": "Équilibre",
+"11200": "Léger Déficit",
+  "11201": "Léger Déficit",
+  "11202": "Léger Déficit",
+  "12010": "Équilibre",
+  "12011": "Équilibre",
+  "12012": "Équilibre",
+  "12013": "Équilibre",
+  "12100": "Équilibre",
+  "12101": "Léger Déficit",
+  "12102": "Léger Déficit",
+  "12103": "Équilibre",
+  "12104": "Équilibre",
+  "12110": "Équilibre",
+  "12111": "Léger Déficit",
+  "12112": "Équilibre",
+  "12113": "Équilibre",
+  "12200": "Léger Déficit",
+  "12201": "Léger Déficit",
+  "12202": "Léger Déficit",
+  "12203": "Léger Déficit",
+  "13100": "Léger Déficit",
+  "13101": "Léger Déficit",
+  "13102": "Équilibre",
+  "13110": "Léger Déficit",
+  "13111": "Léger Déficit",
+  "13112": "Déficit",
+  "13200": "Équilibre",
+  "13201": "Léger Déficit",
+  "14100": "Équilibre",
+  "14101": "Équilibre",
+  "14102": "Équilibre",
+  "14103": "Équilibre",
+  "14110": "Équilibre",
+  "14111": "Léger Surplus",
+  "14112": "Non publié",
+  "14200": "Équilibre",
+  "14201": "Équilibre",
+  "14202": "Équilibre",
+  "14300": "Équilibre",
+  "14301": "Équilibre",
+  "14400": "Équilibre",
+  "14401": "Léger Déficit",
+  "14402": "Équilibre",
+  "14403": "Léger Déficit",
+  "14404": "Léger Déficit",
+  "14405": "Léger Déficit",
+"20010": "Léger Déficit",
+  "20011": "Équilibre",
+  "20012": "Léger Déficit",
+  "21100": "Équilibre",
+  "21101": "Léger Déficit",
+  "21102": "Léger Déficit",
+  "21103": "Non publié",
+  "21109": "Non publié",
+  "21110": "Léger Déficit",
+  "21111": "Léger Déficit",
+  "21112": "Léger Déficit",
+  "21120": "Équilibre",
+  "21200": "Léger Déficit",
+  "21201": "Léger Déficit",
+  "21202": "Léger Déficit",
+  "21203": "Léger Déficit",
+  "21210": "Léger Déficit",
+  "21211": "Léger Déficit",
+  "21220": "Léger Déficit",
+  "21221": "Léger Déficit",
+  "21222": "Déficit",
+  "21223": "Déficit",
+  "21230": "Léger Déficit",
+  "21231": "Déficit",
+  "21232": "Déficit",
+  "21233": "Équilibre",
+  "21234": "Léger Déficit",
+  "21300": "Déficit",
+  "21301": "Déficit",
+  "21310": "Léger Déficit",
+  "21311": "Léger Déficit",
+  "21320": "Léger Déficit",
+  "21321": "Léger Déficit",
+  "21322": "Léger Déficit",
+  "21330": "Équilibre",
+  "21331": "Équilibre",
+  "21332": "Non publié",
+"21390": "Léger Déficit",
+  "21399": "Non publié",
+  "22100": "Déficit",
+  "22101": "Léger Déficit",
+  "22110": "Léger Déficit",
+  "22111": "Équilibre",
+  "22112": "Léger Déficit",
+  "22113": "Équilibre",
+  "22114": "Léger Déficit",
+"22210": "Équilibre",
+  "22211": "Léger Déficit",
+  "22212": "Léger Déficit",
+  "22213": "Équilibre",
+  "22214": "Équilibre",
+  "22220": "Léger Déficit",
+  "22221": "Léger Déficit",
+  "22222": "Léger Déficit",
+  "22230": "Léger Déficit",
+  "22231": "Équilibre",
+  "22232": "Léger Déficit",
+  "22233": "Léger Déficit",
+  "22300": "Déficit",
+  "22301": "Déficit",
+  "22302": "Déficit",
+  "22303": "Léger Déficit",
+  "22310": "Déficit",
+  "22311": "Équilibre",
+  "22312": "Déficit",
+  "22313": "Léger Déficit",
+"30010": "Équilibre",
+  "31100": "Déficit",
+  "31101": "Léger Déficit",
+  "31102": "Déficit",
+  "31103": "Déficit",
+  "31110": "Léger Déficit",
+  "31111": "Équilibre",
+  "31112": "Déficit",
+  "31120": "Déficit",
+  "31121": "Léger Déficit",
+  "31200": "Déficit",
+  "31201": "Équilibre",
+  "31202": "Déficit",
+  "31203": "Déficit",
+  "31204": "Équilibre",
+  "31209": "Équilibre",
+  "31300": "Léger Déficit",
+  "31301": "Déficit",
+  "31302": "Déficit",
+  "31303": "Déficit",
+  "32100": "Léger Déficit",
+  "32101": "Léger Déficit",
+  "32102": "Léger Déficit",
+  "32103": "Déficit",
+  "32104": "Léger Déficit",
+  "32109": "Non publié",
+"32110": "Équilibre",
+  "32111": "Déficit",
+  "32112": "Léger Déficit",
+  "32120": "Déficit",
+  "32121": "Déficit",
+  "32122": "Léger Déficit",
+  "32123": "Déficit",
+  "32124": "Léger Déficit",
+  "32129": "Léger Déficit",
+  "32200": "Non publié",
+  "32201": "Équilibre",
+  "32209": "Non publié",
+  "33100": "Équilibre",
+  "33101": "Léger Déficit",
+  "33102": "Léger Déficit",
+  "33103": "Léger Déficit",
+  "33109": "Non publié",
+"40010": "Non publié",
+  "40011": "Non publié",
+  "40012": "Non publié",
+  "40019": "Non publié",
+  "40020": "Équilibre",
+  "40021": "Équilibre",
+  "40030": "Léger Déficit",
+  "40040": "Non publié",
+  "40041": "Non publié",
+  "40042": "Non publié",
+  "41100": "Non publié",
+  "41101": "Léger Déficit",
+  "41200": "Équilibre",
+  "41201": "Équilibre",
+  "41210": "Équilibre",
+  "41220": "Déficit",
+  "41221": "Déficit",
+  "41300": "Déficit",
+  "41301": "Déficit",
+  "41302": "Non publié",
+  "41310": "Équilibre",
+  "41311": "Équilibre",
+  "41320": "Léger Déficit",
+  "41321": "Léger Déficit",
+"41400": "Équilibre",
+  "41401": "Équilibre",
+  "41402": "Équilibre",
+  "41403": "Équilibre",
+  "41404": "Léger Déficit",
+  "41405": "Léger Déficit",
+  "41406": "Équilibre",
+  "41407": "Équilibre",
+  "41409": "Non publié",
+  "42100": "Léger Déficit",
+  "42101": "Léger Surplus",
+  "42102": "Non publié",
+  "42200": "Équilibre",
+  "42201": "Déficit",
+  "42202": "Déficit",
+  "42203": "Déficit",
+  "42204": "Non publié",
+ "43100": "Léger Déficit",
+  "43109": "Non publié",
+  "43200": "Équilibre",
+  "43201": "Léger Déficit",
+  "43202": "Équilibre",
+  "43203": "Équilibre",
+  "43204": "Non publié",
+  "44100": "Léger Déficit",
+  "44101": "Déficit",
+  "44200": "Non publié",
+"45100": "Léger Déficit",
+  "50010": "Équilibre",
+  "50011": "Équilibre",
+  "50012": "Équilibre",
+  "51100": "Équilibre",
+  "51101": "Équilibre",
+  "51102": "Équilibre",
+  "51110": "Équilibre",
+  "51111": "Non publié",
+  "51112": "Non publié",
+  "51113": "Léger Surplus",
+  "51114": "Équilibre",
+  "51120": "Léger Déficit",
+  "51121": "Non publié",
+  "51122": "Non publié",
+  "52100": "Équilibre",
+  "52110": "Équilibre",
+  "52111": "Équilibre",
+  "52112": "Non publié",
+  "52113": "Léger Déficit",
+  "52114": "Équilibre",
+  "52119": "Non publié",
+  "52120": "Léger Déficit",
+  "52121": "Équilibre",
+  "53100": "Équilibre",
+  "53110": "Léger Surplus",
+  "53111": "Léger Déficit",
+  "53120": "Non publié",
+  "53121": "Non publié",
+  "53122": "Non publié",
+  "53123": "Équilibre",
+  "53124": "Non publié",
+  "53125": "Léger Déficit",
+  "53200": "Non publié",
+  "53201": "Non publié",
+  "53202": "Non publié",
+  "54100": "Léger Déficit",
+  "55109": "Non publié",
+"60010": "Léger Déficit",
+  "60020": "Équilibre",
+  "60030": "Léger Déficit",
+  "60031": "Équilibre",
+  "60040": "Non publié",
+  "62010": "Équilibre",
+  "62020": "Déficit",
+  "62021": "Non publié",
+  "62022": "Équilibre",
+  "62023": "Équilibre",
+  "62024": "Équilibre",
+  "62029": "Non publié",
+  "62100": "Léger Déficit",
+  "62101": "Équilibre",
+  "62200": "Léger Déficit",
+  "62201": "Équilibre",
+  "62202": "Léger Surplus",
+  "63100": "Léger Déficit",
+  "63101": "Léger Surplus",
+  "63102": "Équilibre",
+  "63200": "Déficit",
+  "63201": "Léger Déficit",
+  "63202": "Léger Déficit",
+  "63210": "Équilibre",
+  "63211": "Équilibre",
+  "63220": "Léger Déficit",
+  "63221": "Léger Déficit",
+  "64100": "Léger Déficit",
+  "64101": "Léger Déficit",
+  "64200": "Léger Déficit",
+  "64201": "Non publié",
+  "64300": "Équilibre",
+  "64301": "Équilibre",
+  "64310": "Équilibre",
+  "64311": "Équilibre",
+  "64312": "Équilibre",
+  "64313": "Équilibre",
+  "64314": "Équilibre",
+  "64320": "Équilibre",
+  "64321": "Équilibre",
+  "64322": "Équilibre",
+  "64400": "Équilibre",
+  "64401": "Équilibre",
+  "64409": "Léger Déficit",
+  "64410": "Léger Déficit",
+  "65100": "Léger Déficit",
+  "65101": "Équilibre",
+  "65102": "Léger Déficit",
+  "65109": "Équilibre",
+  "65200": "Léger Déficit",
+  "65201": "Déficit",
+  "65202": "Léger Déficit",
+  "65210": "Équilibre",
+  "65211": "Équilibre",
+  "65220": "Équilibre",
+  "65229": "Non publié",
+"65310": "Léger Déficit",
+  "65311": "Léger Déficit",
+  "65312": "Équilibre",
+  "65320": "Léger Déficit",
+  "65329": "Non publié",
+  "70010": "Équilibre",
+  "70011": "Équilibre",
+  "70012": "Équilibre",
+  "70020": "Équilibre",
+  "70021": "Équilibre",
+  "72010": "Équilibre",
+  "72011": "Équilibre",
+  "72012": "Équilibre",
+  "72013": "Équilibre",
+  "72014": "Équilibre",
+  "72020": "Léger Déficit",
+  "72021": "Équilibre",
+  "72022": "Équilibre",
+  "72023": "Non publié",
+  "72024": "Équilibre",
+  "72025": "Équilibre",
+  "72100": "Déficit",
+  "72101": "Léger Déficit",
+  "72102": "Léger Déficit",
+  "72103": "Équilibre",
+  "72104": "Léger Déficit",
+  "72105": "Léger Déficit",
+  "72106": "Déficit",
+  "72200": "Léger Déficit",
+  "72201": "Léger Déficit",
+  "72202": "Léger Déficit",
+  "72203": "Léger Déficit",
+  "72204": "Léger Déficit",
+  "72205": "Équilibre",
+  "72300": "Léger Déficit",
+  "72301": "Léger Déficit",
+  "72302": "Non publié",
+  "72310": "Léger Déficit",
+  "72311": "Léger Déficit",
+  "72320": "Léger Déficit",
+  "72321": "Léger Déficit",
+  "72400": "Déficit",
+  "72401": "Déficit",
+  "72402": "Léger Déficit",
+  "72403": "Non publié",
+  "72404": "Léger Déficit",
+  "72405": "Léger Déficit",
+  "72406": "Léger Déficit",
+  "72410": "Déficit",
+  "72411": "Déficit",
+  "72420": "Non publié",
+  "72421": "Léger Déficit",
+  "72422": "Déficit",
+  "72423": "Léger Déficit",
+  "72429": "Léger Déficit",
+  "72500": "Léger Déficit",
+  "72501": "Non publié",
+  "72600": "Léger Déficit",
+  "72601": "Équilibre",
+  "72602": "Léger Déficit",
+  "72603": "Léger Déficit",
+  "72604": "Non publié",
+  "72999": "Non publié",
+  "73100": "Léger Déficit",
+  "73101": "Léger Déficit",
+  "73102": "Léger Déficit",
+  "73110": "Léger Déficit",
+  "73111": "Léger Déficit",
+  "73112": "Léger Déficit",
+  "73113": "Léger Déficit",
+  "73200": "Léger Déficit",
+  "73201": "Léger Déficit",
+  "73202": "Équilibre",
+  "73209": "Non publié",
+  "73300": "Déficit",
+  "73301": "Léger Déficit",
+  "73310": "Équilibre",
+  "73311": "Équilibre",
+  "73400": "Léger Déficit",
+  "73401": "Léger Déficit",
+  "73402": "Léger Déficit",
+  "74100": "Équilibre",
+  "74101": "Équilibre",
+  "74102": "Équilibre",
+  "74200": "Équilibre",
+  "74201": "Léger Déficit",
+  "74202": "Équilibre",
+  "74203": "Léger Déficit",
+  "74204": "Non publié",
+  "74205": "Équilibre",
+  "75100": "Équilibre",
+  "75101": "Léger Déficit",
+  "75110": "Léger Déficit",
+  "75119": "Non publié",
+  "75200": "Équilibre",
+  "75201": "Léger Déficit",
+  "75210": "Non publié",
+  "75211": "Équilibre",
+  "75212": "Équilibre",
+"80010": "Équilibre",
+  "80020": "Léger Déficit",
+  "80021": "Léger Déficit",
+  "80022": "Non publié",
+  "82010": "Équilibre",
+  "82020": "Équilibre",
+  "82021": "Non publié",
+  "82030": "Léger Déficit",
+  "82031": "Équilibre",
+  "83100": "Équilibre",
+  "83101": "Non publié",
+  "83110": "Léger Déficit",
+  "83120": "Non publié",
+  "83121": "Équilibre",
+  "84100": "Équilibre",
+  "84101": "Non publié",
+  "84110": "Léger Déficit",
+  "84111": "Léger Déficit",
+  "84120": "Déficit",
+  "84121": "Équilibre",
+  "85100": "Léger Déficit",
+  "85101": "Déficit",
+  "85102": "Non publié",
+  "85103": "Déficit",
+  "85104": "Non publié",
+  "85110": "Non publié",
+  "85111": "Non publié",
+  "85120": "Léger Déficit",
+  "85121": "Déficit",
+  "90010": "Léger Déficit",
+  "90011": "Équilibre",
+  "92010": "Équilibre",
+  "92011": "Équilibre",
+  "92012": "Léger Déficit",
+  "92013": "Léger Déficit",
+  "92014": "Léger Déficit",
+  "92015": "Léger Déficit",
+  "92020": "Équilibre",
+  "92021": "Équilibre",
+  "92022": "Équilibre",
+  "92023": "Équilibre",
+  "92024": "Non publié",
+  "92100": "Léger Déficit",
+  "92101": "Léger Déficit",
+  "93100": "Non publié",
+  "93101": "Léger Déficit",
+  "93102": "Non publié",
+  "93200": "Léger Déficit",
+  "94100": "Léger Déficit",
+  "94101": "Léger Déficit",
+  "94102": "Équilibre",
+  "94103": "Léger Déficit",
+  "94104": "Équilibre",
+  "94105": "Léger Déficit",
+  "94106": "Léger Déficit",
+  "94107": "Léger Déficit",
+  "94110": "Léger Déficit",
+  "94111": "Léger Déficit",
+  "94112": "Léger Déficit",
+  "94120": "Léger Déficit",
+  "94121": "Équilibre",
+  "94122": "Équilibre",
+  "94123": "Équilibre",
+  "94124": "Léger Déficit",
+  "94129": "Équilibre",
+  "94130": "Léger Déficit",
+  "94131": "Léger Déficit",
+  "94132": "Léger Déficit",
+  "94133": "Équilibre",
+  "94140": "Léger Déficit",
+  "94141": "Léger Déficit",
+  "94142": "Léger Déficit",
+  "94143": "Léger Déficit",
+  "94150": "Équilibre",
+  "94151": "Non publié",
+  "94152": "Équilibre",
+  "94153": "Non publié",
+  "94200": "Équilibre",
+  "94201": "Équilibre",
+  "94202": "Léger Déficit",
+  "94203": "Léger Déficit",
+  "94204": "Léger Déficit",
+  "94205": "Léger Déficit",
+  "94210": "Léger Déficit",
+  "94211": "Léger Déficit",
+  "94212": "Léger Déficit",
+  "94213": "Léger Déficit",
+  "94219": "Non publié",
+  "95100": "Équilibre",
+  "95101": "Déficit",
+  "95102": "Léger Déficit",
+  "95103": "Déficit",
+  "95104": "Léger Déficit",
+  "95105": "Léger Déficit",
+  "95106": "Déficit",
+  "95107": "Déficit",
+  "95109": "Non publié"
+      // ... COLLE ICI TON MAPPING COMPLET ...
+    };
+
+    // === Fonctions pour le Diagnostic ===
+    function normalizeDiagnostic(str) {
+  if (!str) return "non_publie";
+  str = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (str.includes("deficit") && !str.includes("leger")) return "deficit";
+  if (str.includes("leger") && str.includes("deficit")) return "leger_deficit";
+  if (str.includes("equilibre")) return "equilibre";
+  if (str.includes("non publie")) return "non_publie";
+  return "non_publie";
+}
+function getDiagnostic(cnp) {
+  return normalizeDiagnostic(cnpDiagnostics[cnp]);
+}
+function pointsDiagnostic(diagnostic, mois) {
+  if (diagnostic === "equilibre" || diagnostic === "non_publie") {
+    if (mois < 12) return 0;
+    if (mois < 24) return 5;
+    if (mois < 36) return 10;
+    if (mois < 48) return 15;
+    return 25;
+  }
+  if (diagnostic === "leger_deficit") {
+    if (mois < 12) return 0;
+    if (mois < 24) return 70;
+    if (mois < 36) return 80;
+    if (mois < 48) return 90;
+    return 100;
+  }
+  if (diagnostic === "deficit") {
+    if (mois < 12) return 0;
+    if (mois < 24) return 90;
+    if (mois < 36) return 100;
+    if (mois < 48) return 110;
+    return 120;
+  }
+  return 0;
+}
+    let scoreDiagnostic = 0;
+
+    function calculerPointsDiagnostic() {
+      const cnp = document.getElementById('cnp').value.trim();
+      const mois = parseInt(document.getElementById('experienceDiagnostic').value, 10);
+      const diagnostic = getDiagnostic(cnp);
+
+      let diagnosticLabel = {
+        "equilibre": "Équilibre",
+        "leger_deficit": "Léger déficit",
+        "deficit": "Déficit",
+        "non_publie": "Non publié"
+      }[diagnostic] || "Non publié";
+
+      const points = pointsDiagnostic(diagnostic, mois);
+      scoreDiagnostic = points;
+
+      let color = "#2563eb";
+      if (diagnostic === "deficit") color = "#e11d48";
+      else if (diagnostic === "leger_deficit") color = "#f59e42";
+      else if (diagnostic === "equilibre") color = "#16a34a";
+      else color = "#64748b";
+
+      document.getElementById('resultat-diagnostic').innerHTML =
+        `<div style="padding:0.5em 0;">
+          <b>Diagnostic :</b> <span style="color:${color};font-weight:bold;">${diagnosticLabel}</span><br>
+          <b>Points selon la durée d'expérience :</b> <span style="color:${color};font-weight:bold;">${points} / 120</span>
+        </div>`;
+
+      calculerScoreTotal(); // Met à jour le total quand tu cliques "Calculer"
+    }
+
+    // === Formulaire Capital humain (rien à toucher ici) ===
+    function renderCapitalHumain() {
+         // 1) Réinitialisation complète des scores
+  scoreCapitalHumain = 0;
+  scoreDiagnostic     = 0;
+  scoreQC             = 0;
+  scoreOffre          = 0;
+  scoreAdaptation     = 0;
+  scoreConjoint       = 0;
+
+  // 2) Vidage des résultats intermédiaires
+  document.getElementById('result').innerText = '';
+  document.getElementById('resultat-diagnostic').innerHTML = '';
+  document.getElementById('resultat-qc').innerHTML = '';
+  document.getElementById('resultat-offre').innerHTML = '';
+  document.getElementById('resultat-adaptation').innerHTML = '';
+  document.getElementById('resultat-conjoint').innerHTML = '';
+
+  // 3) Affichage du score total à zéro
+  calculerScoreTotal();
+  
+      const avecConjoint = document.getElementById("avecConjoint").value === "oui";
+      const form = document.getElementById("capitalHumain");
+      form.innerHTML = '';
+
+      const frenchLevels = [
+        { label: 'Niveau 1 à 4', value: 0 },
+        { label: 'Niveau 5 ou 6', value: avecConjoint ? 30 : 38 },
+        { label: 'Niveau 7 ou 8', value: avecConjoint ? 35 : 44 },
+        { label: 'Niveau 9 à 12', value: avecConjoint ? 40 : 50 }
+      ];
+
+      const buildSelect = (id, label, options) => {
+        return `
+          <label for="${id}">${label}</label>
+          <select id="${id}">
+            ${options.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
+          </select>
+        `;
+      };
+
+      form.innerHTML += `<h2>Connaissance du français</h2>`;
+      form.innerHTML += buildSelect("comprOrale", "Compréhension orale", frenchLevels);
+      form.innerHTML += buildSelect("prodOrale", "Production orale", frenchLevels);
+      form.innerHTML += buildSelect("comprEcrite", "Compréhension écrite", frenchLevels);
+      form.innerHTML += buildSelect("prodEcrite", "Production écrite", frenchLevels);
+
+      const ageOptions = [
+  ["18 à 19 ans", avecConjoint ? 90 : 110],
+  ["20 à 30 ans", avecConjoint ? 100 : 120],
+  ["31 ans",      avecConjoint ? 95 : 110],
+  ["32 ans",      avecConjoint ? 90 : 100],
+  ["33 ans",      avecConjoint ? 81 : 90],
+  ["34 ans",      avecConjoint ? 72 : 80],
+  ["35 ans",      avecConjoint ? 68 : 75],
+  ["36 ans",      avecConjoint ? 63 : 70],
+  ["37 ans",      avecConjoint ? 59 : 65],
+  ["38 ans",      avecConjoint ? 54 : 60],
+  ["39 ans",      avecConjoint ? 50 : 55],
+  ["40 ans",      avecConjoint ? 45 : 50],
+  ["41 ans",      avecConjoint ? 36 : 40],
+  ["42 ans",      avecConjoint ? 27 : 30],
+  ["43 ans",      avecConjoint ? 18 : 20],
+  ["44 ans",      avecConjoint ?  9 : 10],
+  ["45 ans ou plus", 0]
+];
+      form.innerHTML += `<h2>Âge</h2>`;
+      form.innerHTML += buildSelect("age", "Sélectionnez votre groupe d'âge", ageOptions.map(([label, value]) => ({label, value})));
+
+      const expOptions = [
+        ["Moins de 12 mois", 0],
+        ["12 à 23 mois", avecConjoint ? 15 : 20],
+        ["24 à 35 mois", avecConjoint ? 30 : 40],
+        ["36 à 47 mois", avecConjoint ? 35 : 50],
+        ["48 mois et plus", avecConjoint ? 50 : 70]
+      ];
+      form.innerHTML += `<h2>Expérience de travail General</h2>`;
+      form.innerHTML += buildSelect("experience", "Durée de l'expérience (5 dernières années)", expOptions.map(([label, value]) => ({label, value})));
+
+      const educOptions = [
+        ["Secondaire général complété", avecConjoint ? 11 : 13],
+        ["Secondaire professionnel 600 à 899h (QC)", avecConjoint ? 11 : 13],
+        ["Secondaire professionnel 900h+ (QC)", avecConjoint ? 22 : 26],
+        ["Secondaire professionnel 1 an+ (hors QC)", avecConjoint ? 22 : 26],
+        ["Postsecondaire général 2 ans (temps plein)", avecConjoint ? 33 : 39],
+        ["Postsecondaire technique 900h+ (QC)", avecConjoint ? 44 : 52],
+        ["Postsecondaire technique 1 ou 2 ans (hors QC)", avecConjoint ? 44 : 52],
+        ["Postsecondaire technique 3 ans", avecConjoint ? 66 : 78],
+        ["Universitaire 1er cycle 1 an", avecConjoint ? 66 : 78],
+        ["Universitaire 1er cycle 2 ans", avecConjoint ? 77 : 91],
+        ["Universitaire 1er cycle 3-4 ans", avecConjoint ? 88 : 104],
+        ["Universitaire 1er cycle 5 ans ou plus", avecConjoint ? 93 : 110],
+        ["Universitaire 2e cycle 1 an", avecConjoint ? 93 : 110],
+        ["Universitaire 2e cycle 2 ans ou plus", avecConjoint ? 99 : 117],
+        ["Universitaire spécialisation médicale ou 3e cycle", avecConjoint ? 110 : 130]
+      ];
+      form.innerHTML += `<h2>Niveau de scolarité</h2>`;
+      form.innerHTML += buildSelect("education", "Votre diplôme principal complété", educOptions.map(([label, value]) => ({label, value})));
+
+      form.innerHTML += '<button type="button" onclick="calculateCapitalHumain()">Calculer les points Capital humain</button>';
+      // Affiche/masque la section conjoint selon la sélection
+const sectionConjoint = document.getElementById("section-conjoint");
+if (sectionConjoint) {
+  sectionConjoint.style.display = (document.getElementById("avecConjoint").value === "oui") ? "" : "none";
+}
+if (!avecConjoint) {
+  scoreConjoint = 0;
+  document.getElementById('resultat-conjoint').innerHTML = "";
+  calculerScoreTotal();
+}
+    }
+
+    let scoreCapitalHumain = 0;
+
+    function calculateCapitalHumain() {
+  const fields = ["comprOrale", "prodOrale", "comprEcrite", "prodEcrite", "age", "experience", "education"];
+  let total = 0;
+  for (const id of fields) {
+    total += parseInt(document.getElementById(id).value, 10) || 0;
+  }
+  scoreCapitalHumain = total;
+
+  // Détermine le maximum selon qu'on a un conjoint ou pas
+  const avecConjoint = document.getElementById("avecConjoint").value === "oui";
+  const maxCapital = avecConjoint ? 420 : 520;
+
+  // Affiche le résultat avec le bon dénominateur
+  document.getElementById("result").innerText =
+    `Total points – Capital humain : ${total} / ${maxCapital}`;
+
+  // Met à jour le score global
+  calculerScoreTotal();
+}
+
+    // Initialisation à l'ouverture de la page
+    window.onload = renderCapitalHumain;
+    
+    function pointsDiplomeQC(type) {
+  const table = {
+    "secondaire": 20,
+    "dep_600_899": 20,
+    "dep_900": 40,
+    "postsec_gen_2": 60,
+    "postsec_tech_900": 80,
+    "postsec_tech_3": 120,
+    "univ_1an": 120,
+    "univ_2an": 140,
+    "univ_3_4an": 160,
+    "univ_5an": 170,
+    "univ_2e_1an": 170,
+    "univ_2e_2an": 180,
+    "univ_med_2an": 200,
+    "univ_3e": 200
+  };
+  return table[type] || 0;
+}
+
+function pointsExpQC(mois) {
+  mois = parseInt(mois, 10);
+  if (mois < 12) return 0;
+  if (mois < 24) return 40;
+  if (mois < 36) return 80;
+  if (mois < 48) return 120;
+  return 160;
+}
+
+function pointsResidHorsMontr(mois) {
+  mois = parseInt(mois, 10);
+  if (mois < 6) return 0;
+  if (mois < 12) return 6;
+  if (mois < 24) return 16;
+  if (mois < 36) return 24;
+  if (mois < 48) return 32;
+  return 40;
+}
+
+function pointsTravHorsMontr(mois) {
+  mois = parseInt(mois, 10);
+  if (mois < 6) return 0;
+  if (mois < 12) return 9;
+  if (mois < 24) return 24;
+  if (mois < 36) return 36;
+  if (mois < 48) return 48;
+  return 60;
+}
+
+function pointsEtudHorsMontr(mois) {
+  mois = parseInt(mois, 10);
+  if (mois < 6) return 0;
+  if (mois < 12) return 3;
+  if (mois < 24) return 8;
+  if (mois < 36) return 12;
+  if (mois < 48) return 16;
+  return 20;
+}
+
+let scoreQC = 0;
+
+function calculerPointsQC() {
+  const diplome = document.getElementById("diplomeQC").value;
+  const expQC = document.getElementById("expQC").value;
+  const resid = document.getElementById("residHorsMtl").value;
+  const trav = document.getElementById("travHorsMtl").value;
+  const etud = document.getElementById("etudHorsMtl").value;
+
+  const ptsDiplome = pointsDiplomeQC(diplome);
+  const ptsExpQC = pointsExpQC(expQC);
+  const ptsResid = pointsResidHorsMontr(resid);
+  const ptsTrav = pointsTravHorsMontr(trav);
+  const ptsEtud = pointsEtudHorsMontr(etud);
+
+  scoreQC = ptsDiplome + ptsExpQC + ptsResid + ptsTrav + ptsEtud;
+
+  document.getElementById("resultat-qc").innerHTML =
+    `<div style="padding:0.5em 0;">
+      <b>Points diplôme du Québec :</b> ${ptsDiplome} / 200<br>
+      <b>Points expérience de travail au QC :</b> ${ptsExpQC} / 160<br>
+      <b>Points résidence hors Montréal :</b> ${ptsResid} / 40<br>
+      <b>Points travail hors Montréal :</b> ${ptsTrav} / 60<br>
+      <b>Points études hors Montréal :</b> ${ptsEtud} / 20<br>
+      <b style="color:#4f46e5;">Total section Québec / hors Montréal : <span style="font-size:1.1em;">${scoreQC}</span> / 480</b>
+    </div>`;
+
+  calculerScoreTotal();
+}
+let scoreOffre = 0;
+
+function pointsOffreValidee() {
+  const val = document.getElementById("offreValidee").value;
+  if (val === "hors_cmm") return 50;
+  if (val === "cmm") return 30;
+  return 0;
+}
+
+function pointsAutorisationExercer() {
+  return parseInt(document.getElementById("autorisationExercer").value, 10);
+}
+
+function calculerPointsOffre() {
+  const ptsOffre = pointsOffreValidee();
+  const ptsAutorisation = pointsAutorisationExercer();
+  scoreOffre = ptsOffre + ptsAutorisation;
+  document.getElementById("resultat-offre").innerHTML =
+    `<div style="padding:0.5em 0;">
+      <b>Points offre d’emploi validée :</b> ${ptsOffre} / 50<br>
+      <b>Points autorisation d’exercer :</b> ${ptsAutorisation} / 50<br>
+      <b style="color:#4f46e5;">Total section Offre/Autorisation : <span style="font-size:1.1em;">${scoreOffre}</span> / 100</b>
+    </div>`;
+  calculerScoreTotal();
+}
+
+let scoreAdaptation = 0;
+
+// Fonction pour calculer la durée du séjour sans diplôme
+function pointsSejourSansDiplome(type, mois) {
+  mois = parseInt(mois, 10);
+  if (type === "termine") {
+    if (mois < 6) return 0;
+    if (mois < 12) return 1;
+    if (mois < 24) return 3;
+    if (mois < 36) return 5;
+    if (mois < 48) return 8;
+    return 10;
+  }
+  if (type === "encours") {
+    if (mois < 6) return 0;
+    if (mois < 12) return 5;
+    if (mois < 24) return 12;
+    if (mois < 36) return 18;
+    if (mois < 48) return 24;
+    return 30;
+  }
+  return 0;
+}
+
+function calculerPointsAdaptation() {
+  const type = document.getElementById("sejourType").value;
+  const mois = document.getElementById("dureeSejour").value;
+  const ptsSejour = pointsSejourSansDiplome(type, mois);
+
+  const ptsParente = parseInt(document.getElementById("parentQuebec").value, 10);
+
+  scoreAdaptation = ptsSejour + ptsParente;
+
+  document.getElementById("resultat-adaptation").innerHTML =
+    `<div style="padding:0.5em 0;">
+      <b>Points séjour sans diplôme :</b> ${ptsSejour} / 30<br>
+      <b>Points membre parenté au Québec :</b> ${ptsParente} / 10<br>
+      <b style="color:#4f46e5;">Total section Adaptation : <span style="font-size:1.1em;">${scoreAdaptation}</span> / 40</b>
+    </div>`;
+  calculerScoreTotal();
+}
+
+let scoreConjoint = 0;
+
+function calculerPointsConjoint() {
+  // Récupérer toutes les valeurs de la section conjoint
+  const frCompOrale = parseInt(document.getElementById("frCompOraleConj").value, 10);
+  const frProdOrale = parseInt(document.getElementById("frProdOraleConj").value, 10);
+  const frCompEcrit = parseInt(document.getElementById("frCompEcritConj").value, 10);
+  const frProdEcrit = parseInt(document.getElementById("frProdEcritConj").value, 10);
+  const age = parseInt(document.getElementById("ageConj").value, 10);
+  const expQc = parseInt(document.getElementById("expQcConj").value, 10);
+  const scolarite = parseInt(document.getElementById("scolariteConj").value, 10);
+  const diplomeQc = parseInt(document.getElementById("diplomeQcConj").value, 10);
+
+  // Additionne tous les points
+  scoreConjoint =
+    frCompOrale +
+    frProdOrale +
+    frCompEcrit +
+    frProdEcrit +
+    age +
+    expQc +
+    scolarite +
+    diplomeQc;
+
+  // Affiche le résultat dans la section dédiée
+  document.getElementById("resultat-conjoint").innerHTML =
+    `<div style="padding:0.5em 0;">
+      <b>Points conjoint :</b> <span style="color:#2563eb;">${scoreConjoint}</span> / 110
+    </div>`;
+
+  calculerScoreTotal();
+}
+// Mets à jour la somme totale (ajoute scoreQC à ta fonction existante)
+function calculerScoreTotal() {
+  const total = (scoreCapitalHumain || 0)
+    + (scoreDiagnostic || 0)
+    + (scoreQC || 0)
+    + (scoreOffre || 0)
+    + (scoreAdaptation || 0)
+    + (scoreConjoint || 0); // AJOUTE ICI
+
+  document.getElementById('score-total').innerHTML =
+    `<div style="margin-top:1em;"><b>Score estimé total :</b> <span style="color:#4f46e5;font-size:1.3em;">${total}</span> points</div>`;
+}
+
+function calculerTout() {
+  calculateCapitalHumain();
+  calculerPointsDiagnostic();
+  calculerPointsQC();
+  calculerPointsOffre();
+  calculerPointsAdaptation();
+  if (document.getElementById('section-conjoint').style.display !== 'none') {
+    calculerPointsConjoint();
+  }
+  // Un dernier coup de total pour être sûr
+  calculerScoreTotal();
+}
+
+function resetAll() {
+  // 1) remettre le mode « Seul(e) »
+  document.getElementById('avecConjoint').value = 'non';
+  // 2) réinitialiser les scores et l’affichage
+  scoreCapitalHumain = 0;
+  scoreDiagnostic     = 0;
+  scoreQC             = 0;
+  scoreOffre          = 0;
+  scoreAdaptation     = 0;
+  scoreConjoint       = 0;
+  document.getElementById('result').innerText             = '';
+  document.getElementById('resultat-diagnostic').innerHTML = '';
+  document.getElementById('resultat-qc').innerHTML         = '';
+  document.getElementById('resultat-offre').innerHTML      = '';
+  document.getElementById('resultat-adaptation').innerHTML = '';
+  document.getElementById('resultat-conjoint').innerHTML   = '';
+  calculerScoreTotal();
+
+  // 3) réafficher le formulaire Capital humain au mode « Seul(e) »
+  renderCapitalHumain();
+
+  // 4) vider tous les selects fixes
+  const ids = [
+    'cnp', 'experienceDiagnostic',
+    'diplomeQC','expQC','residHorsMtl','travHorsMtl','etudHorsMtl',
+    'offreValidee','autorisationExercer',
+    'sejourType','dureeSejour','parentQuebec'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else if (el.tagName === 'INPUT') el.value = '';
+  });
+}
+  </script>
+</body>
+</html>
+
+
+
 
